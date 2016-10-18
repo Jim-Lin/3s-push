@@ -11,23 +11,23 @@ class ETL:
     def __init__(self):
         self.dao = DAO()
 
-    def check_new_arrive(self):
-        count = 0
+    def get_new_works(self):
         url = "http://www.dmm.co.jp/mono/dvd/-/calendar/=/day=31-31/"
         r = requests.get(url)
         soup = bs(r.text)
         
         cal = soup.find("table", {"id": "monocal"})
-        work_list = cal.find_all("tr")
-        if len(work_list) == 0:
+        works_list = cal.find_all("tr")
+        if len(works_list) == 0:
             return
 
-        for work in work_list:
-            actress_tag  = work.find("td", {"class": "info-01"})
+        new_works = list()
+        for works in works_list:
+            actress_tag  = works.find("td", {"class": "info-01"})
             if actress_tag is None or actress_tag.text == "----":
                 continue
 
-            title_tag  = work.find("td", {"class": "title-monocal"})
+            title_tag  = works.find("td", {"class": "title-monocal"})
             title = title_tag.find("a")
             title_name = title.text
             pattern = re.compile(ur"(^(【数量限定】|【DMM限定】|【アウトレット】)|（ブルーレイディスク）$)", re.UNICODE)
@@ -36,11 +36,13 @@ class ETL:
                 continue
 
             title_url = "http://www.dmm.co.jp" + title.get("href")
-            self.check_work(title_url)
+            no = self.get_works_id(title_url)
+            if no is None:
+                continue
+            else:
+                new_works.append(no)
 
-            count += 1
-
-        print count
+        return new_works
 
     def get_actress_id(self, tag):
         url = tag.get("href")
@@ -54,7 +56,7 @@ class ETL:
 
         return id
 
-    def check_work(self, url):
+    def get_works_id(self, url):
         r = requests.get(url)
         soup = bs(r.text)
         
@@ -70,8 +72,8 @@ class ETL:
         pattern = re.compile("/mono/dvd/-/detail/=/cid=(.*)/")
         match = pattern.search(url)
         cid = match.group(1)
-        work = self.dao.find_work_by_no(cid)
-        if work is not None:
+        works = self.dao.find_works_by_no(cid)
+        if works is not None:
             return
 
         performer = soup.find("span", {"id": "performer"})
@@ -83,6 +85,6 @@ class ETL:
 
         title = soup.find("h1", {"id": "title"})
         data = {'angels': actresses, 'no': cid, 'title': title.text, 'url': url, 'cover_url': a_tag.get('href')}
-        self.dao.insert_work(data)
+        self.dao.insert_works(data)
 
-        return
+        return cid
