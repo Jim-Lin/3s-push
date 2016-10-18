@@ -5,4 +5,4 @@ from etl import ETL
 
 if __name__ == "__main__":
     etl = ETL()
-    etl.check_new_arrive()
+    new_works = etl.get_new_works()
