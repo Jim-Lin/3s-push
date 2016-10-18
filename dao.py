@@ -18,9 +18,9 @@ class DAO:
         self.client = MongoClient('mongodb://localhost:27017/')
         self.db = self.client['dark']
         self.db['actress'].create_index('id', unique=True)
-        work_index_no = IndexModel("no", unique=True)
-        work_index_angels = IndexModel("angels")
-        self.db['work'].create_indexes([work_index_no, work_index_angels])
+        works_index_no = IndexModel("no", unique=True)
+        works_index_angels = IndexModel("angels")
+        self.db['works'].create_indexes([works_index_no, works_index_angels])
 
     def find_actress_by_id(self, id):
         collection = self.db['actress']
@@ -30,10 +30,10 @@ class DAO:
         collection = self.db['actress']
         return collection.insert_one(actress)
 
-    def find_work_by_no(self, no):
-        collection = self.db['work']
+    def find_works_by_no(self, no):
+        collection = self.db['works']
         return collection.find_one({"no": no})
 
-    def insert_work(self, work):
-        collection = self.db['work']
-        return collection.insert_one(work)
+    def insert_works(self, works):
+        collection = self.db['works']
+        return collection.insert_one(works)
