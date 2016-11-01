@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import datetime
 import requests
 from bs4 import BeautifulSoup as bs
 import re
@@ -12,7 +13,8 @@ class ETL:
         self.dao = DAO()
 
     def get_new_works(self):
-        url = "http://www.dmm.co.jp/mono/dvd/-/calendar/=/day=31-31/"
+        day = str(datetime.datetime.now().day)
+        url = "http://www.dmm.co.jp/mono/dvd/-/calendar/=/day=" + day + "-" + day + "/"
         r = requests.get(url)
         soup = bs(r.text)
         
@@ -44,14 +46,13 @@ class ETL:
 
         return new_works
 
-    def get_actress_id(self, tag):
-        url = tag.get("href")
+    def get_actress_id(self, url, name):
         pattern = re.compile("/mono/dvd/-/list/=/article=actress/id=(.*)/")
         match = pattern.search(url)
         id = match.group(1)
         actress = self.dao.find_actress_by_id(id)
         if actress is None:
-            data = {'id': id, 'name': tag.text, 'url': "http://www.dmm.co.jp" + url}
+            data = {'id': id, 'name': name, 'url': "http://www.dmm.co.jp" + url}
             self.dao.insert_actress(data)
 
         return id
@@ -80,8 +81,13 @@ class ETL:
         performer_a_tag = performer.find_all("a")
         actresses = list()
         for i in xrange(len(performer_a_tag)):
-            actress = performer_a_tag[i]
-            actresses.append(self.get_actress_id(actress))
+            actress_url = performer_a_tag[i].get("href")
+            # http://www.dmm.co.jp/mono/dvd/-/detail/=/cid=asfb224/
+            # ▼すべて表示する
+            if actress_url == "#":
+                continue
+            
+            actresses.append(self.get_actress_id(actress_url, performer_a_tag[i].text))
 
         title = soup.find("h1", {"id": "title"})
         data = {'angels': actresses, 'no': cid, 'title': title.text, 'url': url, 'cover_url': a_tag.get('href')}
